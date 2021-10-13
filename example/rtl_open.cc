@@ -4,11 +4,9 @@
 extern "C" {
 #include "libusb.h"
 #include <rtl-sdr.h>
-}
 
 static rtlsdr_dev_t *dev = NULL;
 static uint8_t buf[16 * 512];
-
 
 int read_samples() {
     int read = 0;
@@ -20,12 +18,12 @@ int read_samples() {
     }
 
     std::cout << "bytes read: " << read << std::endl;
-    std::cout << "first samples " << +buf[0] << ", " << +buf[1] << ", "
-              << +buf[2] << ", " << +buf[3] << ", " << +buf[4] << ", "
-              << +buf[5] << ", " << std::endl;
+    std::cout << "first samples " << +buf[0]-127 << ", " << +buf[1]-127 << ", "
+              << +buf[2]-127 << ", " << +buf[3]-127 << ", " << +buf[4]-127 << ", "
+              << +buf[5]-127 << ", " << std::endl;
 
-    std::cout << "first sample " << buf[0] << " " << buf[1] << std::endl;
     return read;
+}
 }
 
 int main() {
