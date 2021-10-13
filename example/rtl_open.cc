@@ -22,16 +22,16 @@ val read_samples() {
         return val(typed_memory_view(0, buf));
     }
 
-    std::cout << "bytes read: " << read << std::endl;
-    std::cout << "first samples " << +buf[0] << ", " << +buf[1] << ", "
-              << +buf[2] << ", " << +buf[3] << ", " << +buf[4] << ", "
-              << +buf[5] << ", " << std::endl;
+    // std::cout << "bytes read: " << read << std::endl;
+    // std::cout << "first samples " << +buf[0] << ", " << +buf[1] << ", "
+    //           << +buf[2] << ", " << +buf[3] << ", " << +buf[4] << ", "
+    //           << +buf[5] << ", " << std::endl;
 
     return val(typed_memory_view(read, buf));
 }
 
 void set_freq(uint32_t freq) {
-	int r = rtlsdr_set_center_freq(dev, 100000000);
+	int r = rtlsdr_set_center_freq(dev, freq);
 	if (r != 0) {
         std::cout << "Failed to set center freq" << std::endl;
 	}
@@ -67,7 +67,7 @@ int main() {
         return 1;
 	}
 
-	r = rtlsdr_set_sample_rate(dev, 1800000);
+	r = rtlsdr_set_sample_rate(dev, 3200000);
 	if (r != 0) {
         std::cout << "Failed to set sample rate" << std::endl;
         return 1;

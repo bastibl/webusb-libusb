@@ -24,8 +24,28 @@ pub fn add_freq(id: String) {
 }
 
 #[wasm_bindgen]
+pub fn add_slider(
+    id: String,
+    min: f64,
+    max: f64,
+    step: f64,
+) {
+    let document = yew::utils::document();
+    let div = document.query_selector(&id).unwrap().unwrap();
+    App::<Slider>::new().mount_with_props(
+        div,
+        SliderProps {
+            min: min as i64,
+            max: max as i64,
+            step: step as i64,
+        },
+    );
+}
+
+#[wasm_bindgen]
 extern "C" {
     fn read_samples() -> Vec<u8>;
+    fn set_freq(f: u32);
 }
 
 pub enum Msg {
@@ -225,7 +245,7 @@ void main()
         match msg {
             Msg::Render(timestamp) => {
                 let s = read_samples();
-                ConsoleService::info(&format!("samples vec len {}", s.len()));
+                // ConsoleService::info(&format!("samples vec len {}", s.len()));
                 if s.len() >= 2048 * 2 {
 
                     let mut t = [Complex::new(0.0f32, 0.0f32); 2048];
@@ -238,11 +258,11 @@ void main()
 
                     self.fft.process(&mut t[..]);
                     for i in 0..2048 {
-                        self.last_data[i] = t[i].norm().log(10.0);
+                        self.last_data[(i+1024)%2048] = t[i].norm().log(10.0);
                     }
                 }
 
-                ConsoleService::info(&format!("data min/max {:?} / {:?}", self.last_data.iter().copied().min_by_key(|x| *x as i32), self.last_data.iter().copied().max_by_key(|x| *x as i32)));
+                // ConsoleService::info(&format!("data min/max {:?} / {:?}", self.last_data.iter().copied().min_by_key(|x| *x as i32), self.last_data.iter().copied().max_by_key(|x| *x as i32)));
 
                 self.render_gl(timestamp);
             }
@@ -305,5 +325,85 @@ impl Frequency {
         let render_frame = self.link.callback(Msg::Render);
         let handle = RenderService::request_animation_frame(render_frame);
         self._render_loop = Some(Box::new(handle));
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+pub enum SliderMsg {
+    Value(yew::events::ChangeData),
+}
+
+#[derive(Clone, Properties, PartialEq)]
+pub struct SliderProps {
+    pub min: i64,
+    pub max: i64,
+    pub step: i64,
+}
+
+pub struct Slider {
+    link: ComponentLink<Self>,
+    props: SliderProps,
+    value: i64,
+}
+
+impl Component for Slider {
+    type Message = SliderMsg;
+    type Properties = SliderProps;
+
+    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
+        Self {
+            link,
+            props,
+            value: 0,
+        }
+    }
+
+    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+        match msg {
+            SliderMsg::Value(v) => {
+                if let ChangeData::Value(s) = v {
+                    if let Ok(v) = s.parse::<u32>() {
+                        self.value = v as i64;
+                        set_freq(v);
+                    }
+                }
+            }
+        };
+        true
+    }
+
+    fn change(&mut self, props: Self::Properties) -> ShouldRender {
+        if props == self.props {
+            return false;
+        }
+
+        self.props = props;
+        true
+    }
+
+    fn view(&self) -> Html {
+        html! {
+            <div>
+                <input type="range"
+                value=self.value.to_string()
+                min=self.props.min.to_string()
+                max=self.props.max.to_string()
+                step=self.props.step.to_string()
+                onchange=self.link.callback(SliderMsg::Value)
+                />
+            </div>
+        }
     }
 }

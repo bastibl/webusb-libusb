@@ -7,7 +7,7 @@
 #include "libusb.h"
 #include "interface.h"
 
-#define DEBUG_TRACE
+// #define DEBUG_TRACE
 
 //
 // Helper functions.
@@ -374,7 +374,7 @@ static int do_sync_bulk_transfer(struct libusb_device_handle *dev_handle,
 
 	switch (transfer->status) {
 	case LIBUSB_TRANSFER_COMPLETED:
-        std::cout << "bulk transfer: completed" << std::endl;
+        // std::cout << "bulk transfer: completed" << std::endl;
 		r = 0;
 		break;
 	case LIBUSB_TRANSFER_TIMED_OUT:
