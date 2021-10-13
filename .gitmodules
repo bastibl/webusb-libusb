@@ -13,3 +13,6 @@
 [submodule "external/fftw3"]
 	path = external/fftw3
 	url = git@github.com:FFTW/fftw3.git
+[submodule "external/rtl-sdr"]
+	path = external/rtl-sdr
+	url = git://git.osmocom.org/rtl-sdr.git

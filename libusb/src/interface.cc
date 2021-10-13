@@ -7,7 +7,7 @@
 #include "libusb.h"
 #include "interface.h"
 
-//#define DEBUG_TRACE
+#define DEBUG_TRACE
 
 //
 // Helper functions.
@@ -21,6 +21,7 @@ void *WUSBThread(void*) {
 #endif
     started = true;
     emscripten_exit_with_live_runtime();
+    std::cout << "WebUSB Thread Done" << std::endl;
     return NULL;
 }
 
@@ -44,41 +45,60 @@ webusb_context* wc(libusb_device_handle* dev_handle) {
 // Proxied methods.
 //
 
+static webusb_context* _ctx = NULL;
+
 int libusb_init(libusb_context** ctx) {
 #ifdef DEBUG_TRACE
     std::cout << "> " << __func__ << std::endl;
 #endif
-    auto _ctx = (webusb_context*)calloc(1, sizeof(webusb_context));
 
-    if (pthread_create(&_ctx->worker, NULL, WUSBThread, nullptr) != 0)
-        return LIBUSB_ERROR_NOT_SUPPORTED;
+    if(!_ctx) {
+        std::cout << "creating webusb_context" << std::endl;
+        _ctx = (webusb_context*)calloc(1, sizeof(webusb_context));
 
-    while (!started)
-        emscripten_sleep(100);
+        if (pthread_create(&_ctx->worker, NULL, WUSBThread, nullptr) != 0)
+            return LIBUSB_ERROR_NOT_SUPPORTED;
 
-    *ctx = (libusb_context*)_ctx;
+        while (!started)
+            emscripten_sleep(100);
 
-    return emscripten_dispatch_to_thread_sync(_ctx->worker, EM_FUNC_SIG_II, _libusb_init, nullptr,
-            ctx);
+        std::cout << "webusb thread: " << _ctx->worker << std::endl;
+        *ctx = (libusb_context*)_ctx;
+
+        return emscripten_dispatch_to_thread_sync(_ctx->worker, EM_FUNC_SIG_II, _libusb_init, nullptr);
+
+    } else {
+        std::cout << "use existing webusb_context" << std::endl;
+        std::cout << "webusb thread: " << _ctx->worker << std::endl;
+    }
+
+    *ctx = (libusb_context *)_ctx;
+    return 0;
 }
 
 void libusb_exit(libusb_context *ctx) {
 #ifdef DEBUG_TRACE
     std::cout << "> " << __func__ << std::endl;
 #endif
-    emscripten_dispatch_to_thread_sync(wc(ctx)->worker, EM_FUNC_SIG_VI, _libusb_exit, nullptr,
-            ctx);
-    free(ctx);
 }
+
+static ssize_t _dev_list_len = 0;
+static libusb_device** _dev_list = NULL;
 
 ssize_t libusb_get_device_list(libusb_context *ctx, libusb_device ***list) {
 #ifdef DEBUG_TRACE
     std::cout << "> " << __func__ << std::endl;
 #endif
+
+    if(_dev_list) {
+        *list = _dev_list;
+        return _dev_list_len;
+    }
+
     libusb_device** _list;
 
     size_t n = emscripten_dispatch_to_thread_sync(wc(ctx)->worker, EM_FUNC_SIG_III, _libusb_get_device_list, nullptr,
-            ctx, &_list);
+            1, &_list);
 
     libusb_device** l = (libusb_device**)malloc(sizeof(libusb_device*) * (n + 2));
 
@@ -94,6 +114,9 @@ ssize_t libusb_get_device_list(libusb_context *ctx, libusb_device ***list) {
     l[n] = nullptr;
     l[n+1] = (libusb_device*)ctx;
 
+    _dev_list = l;
+    _dev_list_len = n;
+
     *list = l;
 
     return n;
@@ -103,6 +126,7 @@ void libusb_free_device_list(libusb_device **list, int unref_devices) {
 #ifdef DEBUG_TRACE
     std::cout << "> " << __func__ << std::endl;
 #endif
+    return;
     pthread_t thread;
 
     int n = 0;
@@ -132,6 +156,7 @@ int libusb_get_device_descriptor(libusb_device *dev, struct libusb_device_descri
 #ifdef DEBUG_TRACE
     std::cout << "> " << __func__ << std::endl;
 #endif
+    std::cout << "webusb thread: " << _ctx->worker << std::endl;
     return emscripten_dispatch_to_thread_sync(wc(dev)->worker, EM_FUNC_SIG_III, _libusb_get_device_descriptor, nullptr,
             dc(dev)->idev, desc);
 }

@@ -57,9 +57,11 @@ int _libusb_init(libusb_context**) {
 };
 
 ssize_t _libusb_get_device_list(libusb_context *ctx, libusb_device ***list) {
+    std::cout << "_libusg_get_device_list" << std::endl;
     if (emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_I, pick_device) < 0)
         return LIBUSB_ERROR_NO_DEVICE;
 
+    std::cout << "navigator get_devices" << std::endl;
     val devices = val::global("navigator")["usb"].call<val>("getDevices").await();
     int available = devices["length"].as<int>();
 
@@ -77,6 +79,7 @@ ssize_t _libusb_get_device_list(libusb_context *ctx, libusb_device ***list) {
     l[available] = nullptr;
     *list = l;
 
+    std::cout << "setting global devices" << std::endl;
     val::global().set("devices", devices);
 
     return available;
