@@ -1,0 +1,35 @@
+[package]
+name = "foo"
+version = "0.1.0"
+authors = ["Bastian Bloessl <mail@bastibl.net>"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+anyhow = "1.0.38"
+console_error_panic_hook = "0.1.6"
+http = "0.2.3"
+js-sys = "0.3.52"
+rbl_circular_buffer = "0.1.2"
+rustfft = "6.0.1"
+serde = "1.0.127"
+serde_json = "1.0.66"
+wasm-bindgen = "0.2.75"
+yew = "0.18"
+
+[dependencies.web-sys]
+version = "0.3.52"
+features = [
+  'HtmlCanvasElement',
+  'WebGlBuffer',
+  'WebGlProgram',
+  'WebGlRenderingContext',
+  'WebGlShader',
+  'WebGlTexture',
+  'WebGlUniformLocation',
+]
+
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false

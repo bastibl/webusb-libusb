@@ -1,29 +1,37 @@
 #include <emscripten.h>
+#include <emscripten/bind.h>
+#include <emscripten/val.h>
 #include <iostream>
+
+using namespace emscripten;
 
 extern "C" {
 #include "libusb.h"
 #include <rtl-sdr.h>
+}
 
 static rtlsdr_dev_t *dev = NULL;
 static uint8_t buf[16 * 512];
 
-int read_samples() {
+val read_samples() {
     int read = 0;
     int r = rtlsdr_read_sync(dev, buf, 16 * 512, &read);
 
     if (r != 0) {
         std::cout << "Failed to read samples" << std::endl;
-        return -1;
+        return val(typed_memory_view(0, buf));
     }
 
     std::cout << "bytes read: " << read << std::endl;
-    std::cout << "first samples " << +buf[0]-127 << ", " << +buf[1]-127 << ", "
-              << +buf[2]-127 << ", " << +buf[3]-127 << ", " << +buf[4]-127 << ", "
-              << +buf[5]-127 << ", " << std::endl;
+    std::cout << "first samples " << +buf[0] << ", " << +buf[1] << ", "
+              << +buf[2] << ", " << +buf[3] << ", " << +buf[4] << ", "
+              << +buf[5] << ", " << std::endl;
 
-    return read;
+    return val(typed_memory_view(read, buf));
 }
+
+EMSCRIPTEN_BINDINGS(rtl_open) {
+    function("read_samples", &read_samples);
 }
 
 int main() {
