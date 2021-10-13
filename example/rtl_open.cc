@@ -1,3 +1,4 @@
+#include <emscripten.h>
 #include <iostream>
 
 extern "C" {
@@ -6,6 +7,26 @@ extern "C" {
 }
 
 static rtlsdr_dev_t *dev = NULL;
+static uint8_t buf[16 * 512];
+
+
+int read_samples() {
+    int read = 0;
+    int r = rtlsdr_read_sync(dev, buf, 16 * 512, &read);
+
+    if (r != 0) {
+        std::cout << "Failed to read samples" << std::endl;
+        return -1;
+    }
+
+    std::cout << "bytes read: " << read << std::endl;
+    std::cout << "first samples " << +buf[0] << ", " << +buf[1] << ", "
+              << +buf[2] << ", " << +buf[3] << ", " << +buf[4] << ", "
+              << +buf[5] << ", " << std::endl;
+
+    std::cout << "first sample " << buf[0] << " " << buf[1] << std::endl;
+    return read;
+}
 
 int main() {
     std::cout << "Hello from WASM C++." << std::endl;
@@ -39,14 +60,20 @@ int main() {
 	}
 
 	r = rtlsdr_set_tuner_gain_mode(dev, 0);
-	if (r < 0) {
+	if (r != 0) {
         std::cout << "Failed to set agc mode" << std::endl;
         return 1;
 	}
 
 	r = rtlsdr_set_agc_mode(dev, 1);
-	if (r < 0) {
+	if (r != 0) {
         std::cout << "Failed to set agc mode" << std::endl;
+        return 1;
+	}
+
+	r = rtlsdr_reset_buffer(dev);
+	if (r != 0) {
+        std::cout << "Failed to reset buffer" << std::endl;
         return 1;
 	}
 

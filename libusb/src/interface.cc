@@ -282,8 +282,8 @@ int LIBUSB_CALL libusb_handle_events_timeout_completed(libusb_context *ctx,
 #ifdef DEBUG_TRACE
     std::cout << "> " << __func__ << std::endl;
 #endif
-    return emscripten_dispatch_to_thread_sync(wc(ctx)->worker, EM_FUNC_SIG_IIII, _libusb_handle_events_timeout_completed, nullptr,
-            ctx, tv, completed);
+    return emscripten_dispatch_to_thread_sync(_ctx->worker, EM_FUNC_SIG_IIII, _libusb_handle_events_timeout_completed, nullptr,
+            nullptr, tv, completed);
 }
 
 int LIBUSB_CALL libusb_set_interface_alt_setting(libusb_device_handle *dev_handle,
@@ -311,4 +311,114 @@ struct libusb_transfer * LIBUSB_CALL libusb_alloc_transfer(int iso_packets) {
     std::cout << "> " << __func__ << std::endl;
 #endif
     return _libusb_alloc_transfer(iso_packets);
+}
+
+static void LIBUSB_CALL sync_transfer_cb(struct libusb_transfer *transfer)
+{
+	int *completed = (int*) transfer->user_data;
+	*completed = 1;
+	/* caller interprets result and frees transfer */
+}
+
+static void sync_transfer_wait_for_completion(struct libusb_transfer *transfer)
+{
+	int r;
+    int *completed = (int*)transfer->user_data;
+
+	while (!*completed) {
+		r = libusb_handle_events_completed(NULL, completed);
+		if (r < 0) {
+			if (r == LIBUSB_ERROR_INTERRUPTED)
+				continue;
+            std::cout << "libusb_handle_events completed failed, cancelling transfer and retrying: " << std::endl;
+			libusb_cancel_transfer(transfer);
+			continue;
+		}
+		if (NULL == transfer->dev_handle) {
+			/* transfer completion after libusb_close() */
+			transfer->status = LIBUSB_TRANSFER_NO_DEVICE;
+			*completed = 1;
+		}
+	}
+}
+
+static int do_sync_bulk_transfer(struct libusb_device_handle *dev_handle,
+	unsigned char endpoint, unsigned char *buffer, int length,
+	int *transferred, unsigned int timeout, unsigned char type)
+{
+	struct libusb_transfer *transfer;
+	int completed = 0;
+	int r;
+
+	transfer = libusb_alloc_transfer(0);
+	if (!transfer) {
+        std::cout << "bulk transfer: no transfer allocated" << std::endl;
+		return LIBUSB_ERROR_NO_MEM;
+    }
+
+	libusb_fill_bulk_transfer(transfer, dev_handle, endpoint, buffer, length,
+		sync_transfer_cb, &completed, timeout);
+	transfer->type = type;
+
+	r = libusb_submit_transfer(transfer);
+	if (r < 0) {
+        std::cout << "bulk transfer: failed to submit transfer" << std::endl;
+		libusb_free_transfer(transfer);
+		return r;
+	}
+
+	sync_transfer_wait_for_completion(transfer);
+
+	if (transferred)
+		*transferred = transfer->actual_length;
+
+	switch (transfer->status) {
+	case LIBUSB_TRANSFER_COMPLETED:
+        std::cout << "bulk transfer: completed" << std::endl;
+		r = 0;
+		break;
+	case LIBUSB_TRANSFER_TIMED_OUT:
+        std::cout << "bulk transfer: timeout" << std::endl;
+		r = LIBUSB_ERROR_TIMEOUT;
+		break;
+	case LIBUSB_TRANSFER_STALL:
+        std::cout << "bulk transfer: stall" << std::endl;
+		r = LIBUSB_ERROR_PIPE;
+		break;
+	case LIBUSB_TRANSFER_OVERFLOW:
+        std::cout << "bulk transfer: overflow" << std::endl;
+		r = LIBUSB_ERROR_OVERFLOW;
+		break;
+	case LIBUSB_TRANSFER_NO_DEVICE:
+        std::cout << "bulk transfer: no device" << std::endl;
+		r = LIBUSB_ERROR_NO_DEVICE;
+		break;
+	case LIBUSB_TRANSFER_ERROR:
+	case LIBUSB_TRANSFER_CANCELLED:
+        std::cout << "bulk transfer: no error" << std::endl;
+		r = LIBUSB_ERROR_IO;
+		break;
+	default:
+        std::cout << "bulk transfer: unrecognised status code " << transfer->status << std::endl;
+		r = LIBUSB_ERROR_OTHER;
+	}
+
+
+	libusb_free_transfer(transfer);
+	return r;
+}
+
+int LIBUSB_CALL libusb_handle_events_completed(
+        libusb_context *ctx, int *completed) {
+    struct timeval tv;
+    tv.tv_sec = 60;
+    tv.tv_usec = 0;
+    return libusb_handle_events_timeout_completed(ctx, &tv, completed);
+}
+
+int LIBUSB_CALL libusb_bulk_transfer(libusb_device_handle *dev_handle,
+    unsigned char endpoint, unsigned char *data, int length,
+                                     int *actual_length, unsigned int timeout) {
+    return do_sync_bulk_transfer(dev_handle, endpoint, data, length,
+            actual_length, timeout, LIBUSB_TRANSFER_TYPE_BULK);
 }

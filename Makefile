@@ -117,6 +117,6 @@ cyberradio: #libusb airspy samurai audiocontext #liquid
 	em++ $(EM_OPTS) -s MODULARIZE=1 -s 'EXPORT_NAME="CyberRadioCore"' -s PROXY_TO_PTHREAD=0 --std=c++17 -laudiocontext -lairspy -lairspyhf -lsamurai -lliquid example/cyberradio.cc -o build/example/cyberradio.js
 
 rtl_open: rtl-sdr
-	em++ $(EM_OPTS) -lrtlsdr example/rtl_open.cc -o build/example/rtl_open.html
+	em++ $(EM_OPTS) -lrtlsdr example/rtl_open.cc -o build/example/rtl_open.html 
 
 examples: libusb_list_devices airspy_list_devices airspy_stream samurai_stream samurai_radio audiocontext_test cyberradio rtl_open

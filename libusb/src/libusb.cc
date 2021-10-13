@@ -294,8 +294,10 @@ int LIBUSB_CALL _libusb_clear_halt(libusb_device_handle *dev_handle, unsigned ch
 int LIBUSB_CALL _libusb_submit_transfer(struct libusb_transfer *transfer) {
     val device = val::global("device");
 
-    if (!device.as<bool>())
+    if (!device.as<bool>()) {
+        std::cout << "_submit_transfer: no device" << std::endl;
         return LIBUSB_ERROR_NO_DEVICE;
+    }
 
     {
         std::lock_guard<std::mutex> lock(mutex);
@@ -308,8 +310,10 @@ int LIBUSB_CALL _libusb_submit_transfer(struct libusb_transfer *transfer) {
             case LIBUSB_TRANSFER_TYPE_BULK: {
                 val res = device.call<val>("transferIn", num, transfer->length).await();
 
-                if (res["status"].as<std::string>().compare("ok"))
+                if (res["status"].as<std::string>().compare("ok")) {
+                    std::cout << "_submit_transfer: status not ok: " << res["status"].as<std::string>() << std::endl;
                     return LIBUSB_ERROR_IO;
+                }
 
                 auto buf = res["data"]["buffer"].as<std::string>();
                 std::copy(buf.begin(), buf.end(), transfer->buffer);
