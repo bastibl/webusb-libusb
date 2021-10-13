@@ -30,8 +30,16 @@ val read_samples() {
     return val(typed_memory_view(read, buf));
 }
 
+void set_freq(uint32_t freq) {
+	int r = rtlsdr_set_center_freq(dev, 100000000);
+	if (r != 0) {
+        std::cout << "Failed to set center freq" << std::endl;
+	}
+}
+
 EMSCRIPTEN_BINDINGS(rtl_open) {
     function("read_samples", &read_samples);
+    function("set_freq", &set_freq);
 }
 
 int main() {
