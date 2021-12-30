@@ -55,8 +55,8 @@ int main() {
 
     std::cout << "RTL Device name: " << rtlsdr_get_device_name(0) << std::endl;
 
-	int r = rtlsdr_open(&dev, 0);
-	if (r < 0) {
+    int r = rtlsdr_open(&dev, 0);
+    if (r < 0) {
         std::cout << "Failed to open RTL-SDR" << std::endl;
         return 1;
 	}
@@ -73,15 +73,15 @@ int main() {
         return 1;
 	}
 
-	r = rtlsdr_set_tuner_gain_mode(dev, 0);
+	r = rtlsdr_set_agc_mode(dev, 0);
 	if (r != 0) {
-        std::cout << "Failed to set agc mode" << std::endl;
+        std::cout << "Failed to disable agc mode" << std::endl;
         return 1;
 	}
 
-	r = rtlsdr_set_agc_mode(dev, 1);
+	r = rtlsdr_set_tuner_gain(dev, 340);
 	if (r != 0) {
-        std::cout << "Failed to set agc mode" << std::endl;
+        std::cout << "Failed to set gain" << std::endl;
         return 1;
 	}
 
