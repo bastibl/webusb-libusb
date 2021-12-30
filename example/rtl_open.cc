@@ -31,10 +31,10 @@ val read_samples() {
 }
 
 void set_freq(uint32_t freq) {
-	int r = rtlsdr_set_center_freq(dev, freq);
-	if (r != 0) {
+    int r = rtlsdr_set_center_freq(dev, freq);
+    if (r != 0) {
         std::cout << "Failed to set center freq" << std::endl;
-	}
+    }
 }
 
 EMSCRIPTEN_BINDINGS(rtl_open) {
@@ -45,13 +45,13 @@ EMSCRIPTEN_BINDINGS(rtl_open) {
 int main() {
     std::cout << "Hello from WASM C++." << std::endl;
 
-	uint32_t devs = rtlsdr_get_device_count();
+    uint32_t devs = rtlsdr_get_device_count();
     std::cout << "RTL-SDR device count: " << devs << std::endl;
 
     if (devs == 0) {
         std::cout << "No RTL-SDR found." << std::endl;
         return 1;
-	}
+    }
 
     std::cout << "RTL Device name: " << rtlsdr_get_device_name(0) << std::endl;
 
@@ -59,37 +59,37 @@ int main() {
     if (r < 0) {
         std::cout << "Failed to open RTL-SDR" << std::endl;
         return 1;
-	}
+    }
 
-	r = rtlsdr_set_center_freq(dev, 100000000);
-	if (r != 0) {
+    r = rtlsdr_set_center_freq(dev, 100000000);
+    if (r != 0) {
         std::cout << "Failed to set center freq" << std::endl;
         return 1;
-	}
+    }
 
-	r = rtlsdr_set_sample_rate(dev, 3200000);
-	if (r != 0) {
+    r = rtlsdr_set_sample_rate(dev, 3200000);
+    if (r != 0) {
         std::cout << "Failed to set sample rate" << std::endl;
         return 1;
-	}
+    }
 
-	r = rtlsdr_set_agc_mode(dev, 0);
-	if (r != 0) {
+    r = rtlsdr_set_agc_mode(dev, 0);
+    if (r != 0) {
         std::cout << "Failed to disable agc mode" << std::endl;
         return 1;
-	}
+    }
 
-	r = rtlsdr_set_tuner_gain(dev, 340);
-	if (r != 0) {
+    r = rtlsdr_set_tuner_gain(dev, 340);
+    if (r != 0) {
         std::cout << "Failed to set gain" << std::endl;
         return 1;
-	}
+    }
 
-	r = rtlsdr_reset_buffer(dev);
-	if (r != 0) {
+    r = rtlsdr_reset_buffer(dev);
+    if (r != 0) {
         std::cout << "Failed to reset buffer" << std::endl;
         return 1;
-	}
+    }
 
     std::cout << "RTL-SDR OPEN SUCCESSFUL" << std::endl;
 
