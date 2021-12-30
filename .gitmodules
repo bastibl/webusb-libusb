@@ -15,4 +15,4 @@
 	url = git@github.com:FFTW/fftw3.git
 [submodule "external/rtl-sdr"]
 	path = external/rtl-sdr
-	url = git://git.osmocom.org/rtl-sdr.git
+	url = https://github.com/bastibl/rtl-sdr.git
