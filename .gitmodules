@@ -16,3 +16,6 @@
 [submodule "external/rtl-sdr"]
 	path = external/rtl-sdr
 	url = https://github.com/bastibl/rtl-sdr.git
+[submodule "external/hackrf"]
+	path = external/hackrf
+	url = https://github.com/greatscottgadgets/hackrf.git

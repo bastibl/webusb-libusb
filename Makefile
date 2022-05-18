@@ -71,6 +71,12 @@ rtl-sdr: build_dir
 	cd external/rtl-sdr/build && emmake make
 	cd external/rtl-sdr/build && emmake make install
 
+hackrf: build_dir
+	mkdir -p external/hackrf/host/build
+	cd external/hackrf/host/build && PKG_CONFIG_PATH=$(BUILD_DIR)/lib/pkgconfig emcmake cmake $(CMAKE_LIBUSB_OPTS_RTL) $(CMAKE_INSTALL_OPTS) $(CMAKE_EM_OPTS) ..
+	cd external/hackrf/host/build && emmake make
+	cd external/hackrf/host/build && emmake make install
+
 airspyhf: build_dir
 	mkdir -p external/airspyhf/build
 	cd external/airspyhf/build && emcmake cmake $(CMAKE_LIBUSB_OPTS) $(CMAKE_INSTALL_OPTS) $(CMAKE_EM_OPTS) ..
@@ -118,6 +124,9 @@ cyberradio: #libusb airspy samurai audiocontext #liquid
 
 rtl_open: rtl-sdr
 	em++ $(EM_OPTS) --bind -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' -lrtlsdr example/rtl_open.cc -o build/example/rtl_open.js 
+
+hackrf_open: hackrf
+	em++ $(EM_OPTS) --bind -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' -s ALLOW_BLOCKING_ON_MAIN_THREAD=1 -Ibuild/include/libhackrf -lhackrf example/hackrf_open.cc -o build/example/hackrf_open.js 
 
 examples: libusb_list_devices airspy_list_devices airspy_stream samurai_stream samurai_radio audiocontext_test cyberradio rtl_open
 
