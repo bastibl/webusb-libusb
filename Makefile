@@ -122,11 +122,12 @@ audiocontext_test: audiocontext
 cyberradio: #libusb airspy samurai audiocontext #liquid
 	em++ $(EM_OPTS) -s MODULARIZE=1 -s 'EXPORT_NAME="CyberRadioCore"' -s PROXY_TO_PTHREAD=0 --std=c++17 -laudiocontext -lairspy -lairspyhf -lsamurai -lliquid example/cyberradio.cc -o build/example/cyberradio.js
 
-rtl_open: rtl-sdr
-	em++ $(EM_OPTS) --bind -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' -lrtlsdr example/rtl_open.cc -o build/example/rtl_open.js 
+rtl_open: rtl-sdr example_dir
+	em++ $(EM_OPTS) --bind -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' -lrtlsdr example/rtl_open.cc -o build/example/rtl_open.js
 
-hackrf_open: hackrf
-	em++ $(EM_OPTS) --bind -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' -s ALLOW_BLOCKING_ON_MAIN_THREAD=1 -Ibuild/include/libhackrf -lhackrf example/hackrf_open.cc -o build/example/hackrf_open.js 
+hackrf_open: hackrf example_dir
+	em++ $(EM_OPTS) --bind -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' -s ALLOW_BLOCKING_ON_MAIN_THREAD=1 -Ibuild/include/libhackrf -lhackrf example/hackrf_open.cc -o build/example/hackrf_open.js
+	cp build/example/hackrf* ${HOME}/src/futuresdr/examples/spectrum/assets/static/
 
 examples: libusb_list_devices airspy_list_devices airspy_stream samurai_stream samurai_radio audiocontext_test cyberradio rtl_open
 

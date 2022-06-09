@@ -73,10 +73,14 @@ val read_samples() {
 }
 
 void set_freq(uint32_t freq) {
+    std::cout << "set_freq: before lock; freq: " << freq << std::endl;
+    std::unique_lock<std::mutex> lock(buf_mutex);
+    std::cout << "set_freq: got lock" << std::endl;
     int result = hackrf_set_freq(device, freq);
     if (result != HACKRF_SUCCESS) {
         std::cout << "Failed to set center freq" << std::endl;
     }
+    std::cout << "set_freq: done" << std::endl;
 }
 
 EMSCRIPTEN_BINDINGS(hackrf_open) {
