@@ -23,13 +23,16 @@ uint32_t read_index;
 uint32_t write_index;
 uint32_t read_available;
 
+bool freq_changed = false;
+uint32_t freq;
+
 void allocate_buffers() {
-	buf = (int8_t * *) malloc( BUF_NUM * sizeof(int8_t *) );
-	if ( buf ) {
-		for ( unsigned int i = 0; i < BUF_NUM; ++i ) {
-			buf[i] = (int8_t *) malloc( BUF_LEN );
-		}
-	}
+    buf = (int8_t **)malloc(BUF_NUM * sizeof(int8_t *));
+    if (buf) {
+        for (unsigned int i = 0; i < BUF_NUM; ++i) {
+            buf[i] = (int8_t *)malloc(BUF_LEN);
+        }
+    }
 
     read_index = 0;
     write_index = 0;
@@ -38,7 +41,7 @@ void allocate_buffers() {
 
 int rx_callback(hackrf_transfer *transfer)
 {
-	std::unique_lock<std::mutex> lock(buf_mutex);
+    std::unique_lock<std::mutex> lock(buf_mutex);
     // std::cout << "HackRF rx_callback, available " << read_available << "  bytes " << transfer-> valid_length << "  read index " << read_index << "  write index " << write_index << std::endl;
 
     uint32_t index = write_index;
@@ -53,17 +56,25 @@ int rx_callback(hackrf_transfer *transfer)
         read_available = 1;
     }
 
-	return 0;
+
+    if(freq_changed) {
+        freq_changed = false;
+        int result = hackrf_set_freq(device, freq);
+        if (result != HACKRF_SUCCESS) {
+            std::cout << "Failed to set center freq" << std::endl;
+        }
+    }
+
+    return 0;
 }
 
 val read_samples() {
-	std::unique_lock<std::mutex> lock(buf_mutex);
+    std::unique_lock<std::mutex> lock(buf_mutex);
 
     // std::cout << "HackRF reading samples, available " << read_available << "  read index " << read_index << "  write index " << write_index << std::endl;
-	if (read_available == 0)
-	{
+    if (read_available == 0) {
         return val(typed_memory_view(0, buf[0]));
-	}
+    }
 
     uint32_t index = read_index;
     read_index = (read_index + 1) % BUF_NUM;
@@ -72,11 +83,11 @@ val read_samples() {
     return val(typed_memory_view(BUF_LEN, buf[index]));
 }
 
-void set_freq(uint32_t freq) {
-    int result = hackrf_set_freq(device, freq);
-    if (result != HACKRF_SUCCESS) {
-        std::cout << "Failed to set center freq" << std::endl;
-    }
+void set_freq(uint32_t f) {
+    std::unique_lock<std::mutex> lock(buf_mutex);
+
+    freq = f;
+    freq_changed = true;
 }
 
 EMSCRIPTEN_BINDINGS(hackrf_open) {
