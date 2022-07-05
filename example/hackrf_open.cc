@@ -25,6 +25,14 @@ uint32_t read_available;
 
 bool freq_changed = false;
 uint32_t freq;
+bool amp_changed = false;
+uint8_t amp;
+bool lna_changed = false;
+uint32_t lna;
+bool vga_changed = false;
+uint32_t vga;
+bool sample_rate_changed = false;
+double sample_rate;
 
 void allocate_buffers() {
     buf = (int8_t **)malloc(BUF_NUM * sizeof(int8_t *));
@@ -64,6 +72,34 @@ int rx_callback(hackrf_transfer *transfer)
             std::cout << "Failed to set center freq" << std::endl;
         }
     }
+    if(amp_changed) {
+        amp_changed = false;
+        int result = hackrf_set_amp_enable(device, amp);
+        if (result != HACKRF_SUCCESS) {
+            std::cout << "Failed to set amp" << std::endl;
+        }
+    }
+    if(lna_changed) {
+        lna_changed = false;
+        int result = hackrf_set_lna_gain(device, lna);
+        if (result != HACKRF_SUCCESS) {
+            std::cout << "Failed to set lna gain" << std::endl;
+        }
+    }
+    if(vga_changed) {
+        vga_changed = false;
+        int result = hackrf_set_vga_gain(device, vga);
+        if (result != HACKRF_SUCCESS) {
+            std::cout << "Failed to set vga gain" << std::endl;
+        }
+    }
+    if(sample_rate_changed) {
+        sample_rate_changed = false;
+        int result = hackrf_set_sample_rate(device, sample_rate);
+        if (result != HACKRF_SUCCESS) {
+            std::cout << "Failed to set sample rate" << std::endl;
+        }
+    }
 
     return 0;
 }
@@ -83,16 +119,43 @@ val read_samples() {
     return val(typed_memory_view(BUF_LEN, buf[index]));
 }
 
-void set_freq(uint32_t f) {
+void set_freq(uint32_t v) {
     std::unique_lock<std::mutex> lock(buf_mutex);
-
-    freq = f;
+    freq = v;
     freq_changed = true;
+}
+
+void set_amp(uint8_t v) {
+    std::unique_lock<std::mutex> lock(buf_mutex);
+    amp = v;
+    amp_changed = true;
+}
+
+void set_lna(uint32_t v) {
+    std::unique_lock<std::mutex> lock(buf_mutex);
+    lna = v;
+    lna_changed = true;
+}
+
+void set_vga(uint32_t v) {
+    std::unique_lock<std::mutex> lock(buf_mutex);
+    vga = v;
+    vga_changed = true;
+}
+
+void set_sample_rate(double v) {
+    std::unique_lock<std::mutex> lock(buf_mutex);
+    sample_rate = v;
+    sample_rate_changed = true;
 }
 
 EMSCRIPTEN_BINDINGS(hackrf_open) {
     function("read_samples", &read_samples);
     function("set_freq", &set_freq);
+    function("set_amp", &set_amp);
+    function("set_lna", &set_lna);
+    function("set_vga", &set_vga);
+    function("set_sample_rate", &set_sample_rate);
 }
 
 int main() {
